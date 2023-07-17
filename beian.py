@@ -45,6 +45,9 @@ def query_base(line):
                 print("\n ************** 请正确输入域名 **************\n")
             else:
                 print("\n*** 该域名不支持备案，请查阅：http://xn--fiq8ituh5mn9d1qbc28lu5dusc.xn--vuq861b/ ***\n")
+                with open('不支持备案的域名.txt', 'a') as f:
+                    f.write(line+"\n")
+                return 0
 
 
 def get_cookies():
@@ -126,6 +129,9 @@ def get_beian_info(info_data, p_uuid, token, sign):
         end_row = beian_info['params']['endRow']
         info = info_data['unitName']
         print(f"\n查询对象：{info} 共有 {domain_total} 个已备案域名\n")
+        if domain_total==0:
+            with open('未备案域名.txt', 'a') as f:
+                f.write(info+"\n")
         for i in range(0, page_total):
             print(f"正在查询第{i+1}页……\n")
             for k in range(0, end_row + 1):
@@ -167,7 +173,7 @@ def data_saver(domain_list):
     if total_row == 1:
         total_row = 0
     elif total_row == 0:
-        return print("所查域名无备案\n")
+        print("所查域名无备案\n")
     print(f"查询结果如下:\n\n{domain_list}\n")
     # Windows获取桌面路径，将表格保存到桌面，其他系统默认保存到/home/文件夹下
     if os.name == "nt":
@@ -231,36 +237,37 @@ def main():
     for line in open("domain.txt"):
             # print(line)
             info = query_base(line)
-            try:
-                global base_header
-                base_header = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32',
-                    'Origin': 'https://beian.miit.gov.cn',
-                    'Referer': 'https://beian.miit.gov.cn/',
-                    'Cookie': f'__jsluid_s={cookie}'
-                }
-                # -1代表对应步骤失败了，不是-1则正常执行下一步
-                if cookie != -1:
-                    token = get_token()
-                    if token != -1:
-                        check_data = get_check_pic(token)
-                        if check_data != -1:
-                            sign = get_sign(check_data, token)
-                            p_uuid = check_data['key']
-                            if sign != -1:
-                                domain_list = get_beian_info(info, p_uuid, token, sign)
-                                data_saver(domain_list)
+            if query_base(line)!=0:
+                try:
+                    global base_header
+                    base_header = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32',
+                        'Origin': 'https://beian.miit.gov.cn',
+                        'Referer': 'https://beian.miit.gov.cn/',
+                        'Cookie': f'__jsluid_s={cookie}'
+                    }
+                    # -1代表对应步骤失败了，不是-1则正常执行下一步
+                    if cookie != -1:
+                        token = get_token()
+                        if token != -1:
+                            check_data = get_check_pic(token)
+                            if check_data != -1:
+                                sign = get_sign(check_data, token)
+                                p_uuid = check_data['key']
+                                if sign != -1:
+                                    domain_list = get_beian_info(info, p_uuid, token, sign)
+                                    data_saver(domain_list)
+                                else:
+                                    raise ValueError("获取Sign遇到错误，请重试！")
                             else:
-                                raise ValueError("获取Sign遇到错误，请重试！")
+                                raise ValueError("计算图片缺口位置错误，请重试！")
                         else:
-                            raise ValueError("计算图片缺口位置错误，请重试！")
+                            raise ValueError("获取Token失败，如频繁失败请关闭程序后等待几分钟再试！")
                     else:
-                        raise ValueError("获取Token失败，如频繁失败请关闭程序后等待几分钟再试！")
-                else:
-                    cookie = get_cookies()
-                    raise ValueError("获取Cookie失败，请重试！")
-            except Exception as e:
-                print(f'{e}\n')
+                        cookie = get_cookies()
+                        raise ValueError("获取Cookie失败，请重试！")
+                except Exception as e:
+                    print(f'{e}\n')
 
 if __name__ == '__main__':
     main()
