@@ -8,6 +8,7 @@ import hashlib
 import requests
 import openpyxl as xl
 from openpyxl.styles import Alignment
+# from selenium import webdriver
 
 os.environ['no_proxy'] = '*'
 
@@ -130,6 +131,8 @@ def get_beian_info(info_data, p_uuid, token, sign):
         info = info_data['unitName']
         print(f"\n查询对象：{info} 共有 {domain_total} 个已备案域名\n")
         if domain_total==0:
+            row_data = "", info, "未备案", "未备案", "", "", "", ""
+            domain_list.append(row_data)
             with open('未备案域名.txt', 'a') as f:
                 f.write(info+"\n")
         for i in range(0, page_total):
