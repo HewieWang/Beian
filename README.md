@@ -3,4 +3,4 @@
 
 python beian.py domain.txt
 
-python icp.py domain.py
+python icp.py domain.txt
